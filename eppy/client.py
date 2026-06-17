@@ -77,12 +77,12 @@ class EppClient(object):
                        local_addr, local_port, self.sock.getpeername()[0], port)
         self.sock.settimeout(self.socket_timeout)  # regular timeout
         if self.ssl_enable:
-            self.sock = ssl.wrap_socket(self.sock, self.keyfile, self.certfile,
-                                        ssl_version=self.ssl_version,
-                                        ciphers=self.ssl_ciphers,
-                                        server_side=False,
-                                        cert_reqs=self.cert_required,
-                                        ca_certs=self.cacerts)
+            context = ssl.create_default_context()
+            context.load_verify_locations(self.cacerts)
+            context.load_cert_chain(self.certfile, self.keyfile)
+            context.check_hostname = self.validate_hostname
+            context.verify_mode = self.cert_required
+            self.sock = context.wrap_socket(self.sock, server_hostname=host, server_side=False)
             self.log.debug('%s negotiated with local=%s:%s remote=%s:%s', self.sock.version(),
                            local_addr, local_port, self.sock.getpeername()[0], port)
             if self.validate_hostname:
